@@ -397,22 +397,39 @@ def mgc(image1, image2, orientation):
     image2_signed = np.rot90(image2, num_rotations).astype(np.int16)
 
     # Get mean gradient of image1
-
     g_i_l = image1_signed[:, -1] - image1_signed[:, -2]
-    mu = g_i_l.mean(axis=0)
+    mu_l = g_i_l.mean(axis=0)
 
     # Get covariance matrix S
     # Small values are added to the diagonal of S to resolve non-invertibility
     # of S. This will not influence the final result.
 
-    s = np.cov(g_i_l.T) + np.eye(3) * 10e-6
+    s_l = np.cov(g_i_l.T) + np.eye(3) * 10e-6
 
     # Get G_ij_LR
+    g_ij_lr = image2_signed[:, 0] - image1_signed[:, -1]
 
-    g_ij_lr = image2_signed[:, 1] - image1_signed[:, -1]
+    # Distance left to right
+    D_lr = sum(mahalanobis(row, mu_l, np.linalg.inv(s_l)) for row in g_ij_lr)
 
-    return sum(mahalanobis(row, mu, np.linalg.inv(s)) for row in g_ij_lr)
 
+    # Get mean gradient of image1
+    g_i_r = image2_signed[:, 0] - image2_signed[:, 1]
+    mu__r = g_i_r.mean(axis=0)
+
+    # Get covariance matrix S
+    # Small values are added to the diagonal of S to resolve non-invertibility
+    # of S. This will not influence the final result.
+
+    s_r = np.cov(g_i_r.T) + np.eye(3) * 10e-6
+
+    # Get G_ij_RL
+    g_ij_rl = image2_signed[:, 0] - image1_signed[:, -1]
+
+    # Distance left to right
+    D_rl = sum(mahalanobis(row, mu_r, np.linalg.inv(s_r)) for row in g_ij_r;)
+
+    return D_lr + D_rl
 
 def initial_pairwise_matches(num_images):
     """
